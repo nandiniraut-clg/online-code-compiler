@@ -1,15 +1,12 @@
 package com.compiler.backend.service;
 
-import java.io.File;
-import java.io.FileWriter;
-import java.io.OutputStream;
+import com.compiler.backend.model.CodeRequest;
+import org.springframework.stereotype.Service;
+
+import java.io.*;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
-
-import org.springframework.stereotype.Service;
-
-import com.compiler.backend.model.CodeRequest;
 
 @Service
 public class CodeService {
@@ -34,7 +31,29 @@ public class CodeService {
                     writer.write(req.getCode());
                 }
 
-                String pythonCmd = isWindows ? "python" : "python3";
+                // Resolve python: PYTHON_PATH env var → known install locations → fallback
+                String pythonCmd = System.getenv("PYTHON_PATH");
+                if (pythonCmd == null || pythonCmd.isBlank()) {
+                    if (isWindows) {
+                        String[] pythonCandidates = {
+                            "C:\\Users\\soniy\\AppData\\Local\\Programs\\Python\\Python314\\python.exe",
+                            "C:\\Users\\soniy\\AppData\\Local\\Programs\\Python\\Python313\\python.exe",
+                            "C:\\Users\\soniy\\AppData\\Local\\Programs\\Python\\Python312\\python.exe",
+                            "C:\\Python314\\python.exe",
+                            "C:\\Python313\\python.exe",
+                            "C:\\Python312\\python.exe"
+                        };
+                        pythonCmd = "python"; // fallback
+                        for (String candidate : pythonCandidates) {
+                            if (new File(candidate).exists()) {
+                                pythonCmd = candidate;
+                                break;
+                            }
+                        }
+                    } else {
+                        pythonCmd = "python3";
+                    }
+                }
                 process = new ProcessBuilder(pythonCmd, tempFile.getAbsolutePath())
                         .start();
             }
@@ -51,8 +70,28 @@ public class CodeService {
                     writer.write(req.getCode());
                 }
 
+                // Resolve javac/java: JAVA_BIN env var → known install locations → fallback
+                String javaBin = System.getenv("JAVA_BIN");
+                if (javaBin == null || javaBin.isBlank()) {
+                    String[] javaCandidates = {
+                        "C:\\Program Files\\Eclipse Adoptium\\jdk-25.0.2.10-hotspot\\bin",
+                        "C:\\Program Files\\Eclipse Adoptium\\jdk-21.0.0.10-hotspot\\bin",
+                        "C:\\Program Files\\Java\\jdk-21\\bin",
+                        "C:\\Program Files\\Java\\jdk-17\\bin"
+                    };
+                    javaBin = ""; // empty = use plain javac/java as PATH fallback
+                    for (String candidate : javaCandidates) {
+                        if (new File(candidate, "javac.exe").exists()) {
+                            javaBin = candidate + "\\";
+                            break;
+                        }
+                    }
+                } else {
+                    javaBin = javaBin.endsWith("\\") ? javaBin : javaBin + "\\";
+                }
+
                 // Compile
-                Process compile = new ProcessBuilder("javac", "Main.java")
+                Process compile = new ProcessBuilder(javaBin + "javac", "Main.java")
                         .directory(dir)
                         .start();
 
@@ -67,7 +106,7 @@ public class CodeService {
                 }
 
                 // Run
-                process = new ProcessBuilder("java", "Main")
+                process = new ProcessBuilder(javaBin + "java", "Main")
                         .directory(dir)
                         .start();
             }
