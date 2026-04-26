@@ -1,0 +1,942 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>CodeRunner — Online Compiler</title>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0d0f14;
+      --bg2: #141720;
+      --bg3: #1c1f2e;
+      --bg4: #252840;
+      --border: #2e3150;
+      --border2: #3d4170;
+      --accent: #7c6aff;
+      --accent2: #a78bfa;
+      --accent3: #c4b5fd;
+      --green: #22d3a0;
+      --green2: #6efccc;
+      --red: #ff5c5c;
+      --amber: #fbbf24;
+      --text: #e8eaf0;
+      --text2: #9297b8;
+      --text3: #6167a0;
+      --font-mono: 'JetBrains Mono', monospace;
+      --font-ui: 'Syne', sans-serif;
+      --radius: 10px;
+      --radius-lg: 16px;
+    }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-ui);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    /* ── TOPBAR ── */
+    .topbar {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0 24px;
+      height: 56px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      position: relative;
+      z-index: 10;
+    }
+
+    .logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 18px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text);
+      user-select: none;
+    }
+
+    .logo-icon {
+      width: 30px;
+      height: 30px;
+      background: linear-gradient(135deg, var(--accent), var(--green));
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      color: #fff;
+      font-family: var(--font-mono);
+      font-weight: 700;
+    }
+
+    .logo span { color: var(--accent3); }
+
+    .topbar-center { flex: 1; display: flex; align-items: center; justify-content: center; gap: 8px; }
+
+    .lang-tabs {
+      display: flex;
+      gap: 4px;
+      background: var(--bg3);
+      padding: 4px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+
+    .lang-tab {
+      padding: 5px 14px;
+      border-radius: 7px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      color: var(--text2);
+      transition: all 0.15s;
+    }
+
+    .lang-tab:hover { color: var(--text); background: var(--bg4); }
+    .lang-tab.active { background: var(--accent); color: #fff; }
+
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+
+    .btn {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 16px;
+      border-radius: var(--radius);
+      font-family: var(--font-ui);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.15s;
+    }
+
+    .btn-ghost {
+      background: transparent;
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+    .btn-ghost:hover { background: var(--bg3); color: var(--text); border-color: var(--border2); }
+
+    .btn-run {
+      background: var(--green);
+      color: #0a1a14;
+      padding: 7px 20px;
+      font-size: 13px;
+    }
+    .btn-run:hover { background: var(--green2); transform: translateY(-1px); }
+    .btn-run:active { transform: translateY(0); }
+    .btn-run.loading { opacity: 0.7; pointer-events: none; }
+
+    .run-icon { font-size: 10px; }
+
+    /* ── MAIN LAYOUT ── */
+    .workspace {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 220px 1fr 1fr;
+      grid-template-rows: 1fr;
+      overflow: hidden;
+      height: calc(100vh - 56px);
+    }
+
+    /* ── SIDEBAR ── */
+    .sidebar {
+      background: var(--bg2);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      overflow-y: auto;
+    }
+
+    .sidebar-section { padding: 16px; border-bottom: 1px solid var(--border); }
+
+    .sidebar-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text3);
+      margin-bottom: 12px;
+    }
+
+    .input-group { margin-bottom: 10px; }
+
+    .input-label {
+      font-size: 11px;
+      color: var(--text2);
+      margin-bottom: 5px;
+      display: block;
+      font-family: var(--font-mono);
+    }
+
+    select, textarea.stdin-area {
+      width: 100%;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      font-family: var(--font-mono);
+      font-size: 12px;
+      padding: 8px 10px;
+      appearance: none;
+      cursor: pointer;
+      outline: none;
+      transition: border-color 0.15s;
+    }
+    select:focus, textarea.stdin-area:focus { border-color: var(--accent); }
+
+    textarea.stdin-area {
+      resize: none;
+      height: 80px;
+      cursor: text;
+      line-height: 1.5;
+    }
+
+    .snippet-list { display: flex; flex-direction: column; gap: 6px; }
+
+    .snippet-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 10px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .snippet-item:hover { background: var(--bg4); border-color: var(--border2); }
+
+    .snippet-dot {
+      width: 6px; height: 6px;
+      border-radius: 50%;
+      background: var(--accent2);
+      flex-shrink: 0;
+    }
+
+    .snippet-name { font-size: 11px; font-family: var(--font-mono); color: var(--text2); }
+
+    .theme-toggle { display: flex; gap: 6px; }
+
+    .theme-btn {
+      flex: 1;
+      padding: 6px;
+      border-radius: 7px;
+      font-size: 11px;
+      font-family: var(--font-mono);
+      border: 1px solid var(--border);
+      background: transparent;
+      color: var(--text2);
+      cursor: pointer;
+      transition: all 0.15s;
+      text-align: center;
+    }
+    .theme-btn.active { background: var(--bg4); color: var(--text); border-color: var(--border2); }
+
+    .font-slider { width: 100%; accent-color: var(--accent); }
+
+    /* ── EDITOR PANEL ── */
+    .editor-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      border-right: 1px solid var(--border);
+    }
+
+    .panel-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .panel-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+      color: var(--text3);
+    }
+
+    .panel-badge {
+      font-size: 10px;
+      font-family: var(--font-mono);
+      padding: 2px 7px;
+      border-radius: 4px;
+      background: var(--bg4);
+      color: var(--text2);
+      border: 1px solid var(--border);
+    }
+
+    .panel-spacer { flex: 1; }
+
+    .icon-btn {
+      background: transparent;
+      border: none;
+      color: var(--text3);
+      cursor: pointer;
+      padding: 4px;
+      border-radius: 5px;
+      font-size: 14px;
+      transition: all 0.12s;
+      display: flex; align-items: center;
+    }
+    .icon-btn:hover { color: var(--text2); background: var(--bg3); }
+
+    /* ── EDITOR ── */
+    .editor-wrap {
+      flex: 1;
+      display: grid;
+      grid-template-columns: 44px 1fr;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .line-nums {
+      background: var(--bg2);
+      padding: 16px 0;
+      overflow: hidden;
+      text-align: right;
+      border-right: 1px solid var(--border);
+      user-select: none;
+    }
+
+    .line-num {
+      display: block;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      color: var(--text3);
+      padding: 0 10px 0 0;
+      line-height: 1.65;
+      min-height: 21.45px;
+    }
+
+    .line-num.active { color: var(--accent2); }
+
+    #editor {
+      background: var(--bg);
+      color: var(--text);
+      border: none;
+      outline: none;
+      resize: none;
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.65;
+      padding: 16px;
+      width: 100%;
+      height: 100%;
+      overflow-y: auto;
+      caret-color: var(--green);
+      tab-size: 2;
+      white-space: pre;
+      overflow-x: auto;
+    }
+
+    #editor::selection { background: rgba(124, 106, 255, 0.3); }
+
+    /* ── OUTPUT PANEL ── */
+    .output-panel {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .output-tabs {
+      display: flex;
+      gap: 0;
+      background: var(--bg2);
+      border-bottom: 1px solid var(--border);
+      flex-shrink: 0;
+      padding: 0 12px;
+    }
+
+    .output-tab {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      color: var(--text3);
+      padding: 12px 14px;
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      transition: all 0.15s;
+      border-radius: 0;
+      background: transparent;
+      border-top: none;
+      border-left: none;
+      border-right: none;
+    }
+    .output-tab:hover { color: var(--text2); }
+    .output-tab.active { color: var(--accent2); border-bottom-color: var(--accent); }
+
+    .output-body {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+      position: relative;
+    }
+
+    .output-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100%;
+      gap: 12px;
+      color: var(--text3);
+    }
+
+    .placeholder-icon {
+      width: 48px; height: 48px;
+      border-radius: 14px;
+      background: var(--bg3);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+    }
+
+    .placeholder-text { font-size: 13px; font-family: var(--font-mono); }
+
+    .output-content {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      line-height: 1.7;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    .output-content.success { color: var(--green2); }
+    .output-content.error { color: var(--red); }
+
+    .output-meta {
+      display: flex;
+      gap: 16px;
+      padding: 10px 16px;
+      background: var(--bg2);
+      border-top: 1px solid var(--border);
+      flex-shrink: 0;
+    }
+
+    .meta-item {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11px; font-family: var(--font-mono); color: var(--text3);
+    }
+
+    .meta-dot { width: 5px; height: 5px; border-radius: 50%; }
+    .meta-dot.ok { background: var(--green); }
+    .meta-dot.err { background: var(--red); }
+    .meta-dot.neutral { background: var(--text3); }
+
+    /* ── STATUS BAR ── */
+    .statusbar {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      height: 24px;
+      background: var(--accent);
+      padding: 0 16px;
+      flex-shrink: 0;
+    }
+
+    .status-item {
+      font-size: 11px;
+      font-family: var(--font-mono);
+      color: rgba(255,255,255,0.8);
+      padding: 0 10px;
+      height: 100%;
+      display: flex; align-items: center;
+      border-right: 1px solid rgba(255,255,255,0.15);
+    }
+    .status-item:first-child { border-left: 1px solid rgba(255,255,255,0.15); }
+
+    .status-spacer { flex: 1; }
+
+    /* ── SPINNER ── */
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner {
+      width: 14px; height: 14px;
+      border: 2px solid rgba(10,26,20,0.3);
+      border-top-color: #0a1a14;
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+    }
+
+    /* ── TOAST ── */
+    .toast {
+      position: fixed;
+      bottom: 40px;
+      right: 24px;
+      background: var(--bg4);
+      border: 1px solid var(--border2);
+      border-radius: var(--radius);
+      padding: 10px 18px;
+      font-size: 13px;
+      font-family: var(--font-mono);
+      color: var(--text);
+      z-index: 999;
+      opacity: 0;
+      transform: translateY(8px);
+      transition: all 0.25s;
+      pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateY(0); }
+
+    /* ── SCROLLBARS ── */
+    ::-webkit-scrollbar { width: 5px; height: 5px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 3px; }
+
+    /* ── MOBILE WARN ── */
+    @media (max-width: 800px) {
+      .workspace { grid-template-columns: 1fr; }
+      .sidebar, .output-panel { display: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<header class="topbar">
+  <div class="logo">
+    <div class="logo-icon">&gt;_</div>
+    Code<span>Runner</span>
+  </div>
+
+  <div class="topbar-center">
+    <div class="lang-tabs" id="langTabs">
+      <button class="lang-tab active" data-lang="java">Java</button>
+      <button class="lang-tab" data-lang="python">Python</button>
+      <button class="lang-tab" data-lang="javascript">JS</button>
+      <button class="lang-tab" data-lang="c">C</button>
+      <button class="lang-tab" data-lang="cpp">C++</button>
+    </div>
+  </div>
+
+  <div class="topbar-right">
+    <button class="btn btn-ghost" onclick="clearEditor()">Clear</button>
+    <button class="btn btn-ghost" onclick="copyCode()">Copy</button>
+    <button class="btn btn-run" id="runBtn" onclick="runCode()">
+      <span class="run-icon">▶</span> Run
+    </button>
+  </div>
+</header>
+
+<!-- WORKSPACE -->
+<div class="workspace">
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-section">
+      <div class="sidebar-label">Settings</div>
+
+      <div class="input-group">
+        <label class="input-label">Version</label>
+        <select id="versionSelect">
+          <option>JDK 21</option>
+          <option>JDK 17</option>
+          <option>JDK 11</option>
+        </select>
+      </div>
+
+      <div class="input-group">
+        <label class="input-label">Font size: <span id="fontSizeVal">13</span>px</label>
+        <input type="range" class="font-slider" min="11" max="20" value="13" id="fontSizeSlider"
+          oninput="setFontSize(this.value)"/>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Stdin</div>
+      <textarea class="stdin-area" id="stdinArea" placeholder="Enter input here...&#10;(for Scanner / input())"></textarea>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Snippets</div>
+      <div class="snippet-list" id="snippetList"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="sidebar-label">Theme</div>
+      <div class="theme-toggle">
+        <button class="theme-btn active" onclick="setTheme('dark')">Dark</button>
+        <button class="theme-btn" onclick="setTheme('light')">Light</button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- EDITOR PANEL -->
+  <div class="editor-panel">
+    <div class="panel-header">
+      <span class="panel-title">Editor</span>
+      <span class="panel-badge" id="langBadge">Java</span>
+      <div class="panel-spacer"></div>
+      <button class="icon-btn" title="Format" onclick="showToast('Format coming soon')">⌥F</button>
+      <button class="icon-btn" title="Fullscreen" onclick="showToast('Fullscreen soon')">⛶</button>
+    </div>
+
+    <div class="editor-wrap">
+      <div class="line-nums" id="lineNums"></div>
+      <textarea id="editor" spellcheck="false"
+        onkeydown="handleKey(event)"
+        oninput="updateLineNums(); updateStatus()"
+        onclick="updateStatus()"
+        onkeyup="updateStatus()"></textarea>
+    </div>
+  </div>
+
+  <!-- OUTPUT PANEL -->
+  <div class="output-panel">
+    <div class="output-tabs">
+      <button class="output-tab active" onclick="switchTab('output', this)">Output</button>
+      <button class="output-tab" onclick="switchTab('errors', this)">Errors</button>
+      <button class="output-tab" onclick="switchTab('info', this)">Info</button>
+    </div>
+
+    <div class="output-body" id="outputBody">
+      <div class="output-placeholder" id="outputPlaceholder">
+        <div class="placeholder-icon">▷</div>
+        <div class="placeholder-text">press run to execute</div>
+      </div>
+    </div>
+
+    <div class="output-meta">
+      <div class="meta-item">
+        <div class="meta-dot neutral" id="statusDot"></div>
+        <span id="statusText">Ready</span>
+      </div>
+      <div class="meta-item">⏱ <span id="execTime">—</span></div>
+      <div class="meta-item">📦 <span id="memUsage">—</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- STATUS BAR -->
+<footer class="statusbar">
+  <div class="status-item" id="sbLang">Java · JDK 21</div>
+  <div class="status-item" id="sbCursor">Ln 1, Col 1</div>
+  <div class="status-item" id="sbLines">1 line</div>
+  <div class="status-spacer"></div>
+  <div class="status-item">CodeRunner v1.0</div>
+  <div class="status-item">UTF-8</div>
+</footer>
+
+<!-- TOAST -->
+<div class="toast" id="toast"></div>
+
+<script>
+const SNIPPETS = {
+  java: [
+    { name: 'Hello World', code: `public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}` },
+    { name: 'Scanner Input', code: `import java.util.Scanner;\n\npublic class Main {\n    public static void main(String[] args) {\n        Scanner sc = new Scanner(System.in);\n        System.out.print("Enter name: ");\n        String name = sc.nextLine();\n        System.out.println("Hello, " + name + "!");\n    }\n}` },
+    { name: 'Array Sum', code: `public class Main {\n    public static void main(String[] args) {\n        int[] arr = {10, 20, 30, 40, 50};\n        int sum = 0;\n        for (int x : arr) sum += x;\n        System.out.println("Sum = " + sum);\n    }\n}` },
+    { name: 'Fibonacci', code: `public class Main {\n    public static void main(String[] args) {\n        int n = 10, a = 0, b = 1;\n        System.out.print(a + " " + b);\n        for (int i = 2; i < n; i++) {\n            int c = a + b; a = b; b = c;\n            System.out.print(" " + c);\n        }\n    }\n}` },
+  ],
+  python: [
+    { name: 'Hello World', code: `print("Hello, World!")` },
+    { name: 'User Input', code: `name = input("Enter your name: ")\nprint(f"Hello, {name}!")` },
+    { name: 'List Comprehension', code: `squares = [x**2 for x in range(1, 11)]\nprint(squares)` },
+    { name: 'Fibonacci', code: `def fib(n):\n    a, b = 0, 1\n    for _ in range(n):\n        print(a, end=' ')\n        a, b = b, a + b\n\nfib(10)` },
+  ],
+  javascript: [
+    { name: 'Hello World', code: `console.log("Hello, World!");` },
+    { name: 'Arrow Function', code: `const greet = (name) => \`Hello, \${name}!\`;\nconsole.log(greet("CodeRunner"));` },
+    { name: 'Array Methods', code: `const nums = [1,2,3,4,5];\nconst evens = nums.filter(n => n % 2 === 0);\nconsole.log("Evens:", evens);\nconsole.log("Sum:", nums.reduce((a,b) => a+b, 0));` },
+    { name: 'Async Fetch', code: `async function getData() {\n  const res = await fetch('https://jsonplaceholder.typicode.com/todos/1');\n  const data = await res.json();\n  console.log(data);\n}\ngetData();` },
+  ],
+  c: [
+    { name: 'Hello World', code: `#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}` },
+    { name: 'Array Sum', code: `#include <stdio.h>\n\nint main() {\n    int arr[] = {10, 20, 30, 40, 50};\n    int n = 5, sum = 0;\n    for (int i = 0; i < n; i++) sum += arr[i];\n    printf("Sum = %d\\n", sum);\n    return 0;\n}` },
+  ],
+  cpp: [
+    { name: 'Hello World', code: `#include <iostream>\nusing namespace std;\n\nint main() {\n    cout << "Hello, World!" << endl;\n    return 0;\n}` },
+    { name: 'Vector Sum', code: `#include <iostream>\n#include <vector>\nusing namespace std;\n\nint main() {\n    vector<int> v = {1,2,3,4,5};\n    int sum = 0;\n    for (int x : v) sum += x;\n    cout << "Sum = " << sum << endl;\n    return 0;\n}` },
+  ],
+};
+
+const VERSIONS = {
+  java: ['JDK 21', 'JDK 17', 'JDK 11'],
+  python: ['Python 3.12', 'Python 3.10', 'Python 3.8'],
+  javascript: ['Node 20 LTS', 'Node 18 LTS', 'Node 16'],
+  c: ['GCC 13', 'GCC 11', 'Clang 16'],
+  cpp: ['GCC 13 (C++23)', 'GCC 11 (C++17)', 'Clang 16'],
+};
+
+let currentLang = 'java';
+let currentTab = 'output';
+let outputData = { output: '', errors: '', info: '' };
+let isRunning = false;
+
+const editor = document.getElementById('editor');
+const lineNums = document.getElementById('lineNums');
+const outputBody = document.getElementById('outputBody');
+const runBtn = document.getElementById('runBtn');
+const langBadge = document.getElementById('langBadge');
+const versionSelect = document.getElementById('versionSelect');
+const sbLang = document.getElementById('sbLang');
+const sbCursor = document.getElementById('sbCursor');
+const sbLines = document.getElementById('sbLines');
+const statusDot = document.getElementById('statusDot');
+const statusText = document.getElementById('statusText');
+const execTime = document.getElementById('execTime');
+const memUsage = document.getElementById('memUsage');
+
+function init() {
+  setLang('java');
+  updateLineNums();
+}
+
+function setLang(lang) {
+  currentLang = lang;
+  document.querySelectorAll('.lang-tab').forEach(t => t.classList.toggle('active', t.dataset.lang === lang));
+  langBadge.textContent = lang.charAt(0).toUpperCase() + lang.slice(1);
+
+  const vers = VERSIONS[lang];
+  versionSelect.innerHTML = vers.map(v => `<option>${v}</option>`).join('');
+  sbLang.textContent = `${lang.charAt(0).toUpperCase() + lang.slice(1)} · ${vers[0]}`;
+
+  loadSnippets(lang);
+  if (!editor.value.trim()) loadSnippet(SNIPPETS[lang][0].code);
+  else loadSnippet(SNIPPETS[lang][0].code);
+  updateLineNums();
+}
+
+function loadSnippets(lang) {
+  const list = document.getElementById('snippetList');
+  list.innerHTML = (SNIPPETS[lang] || []).map((s, i) =>
+    `<div class="snippet-item" onclick="loadSnippet(SNIPPETS['${lang}'][${i}].code)">
+      <div class="snippet-dot"></div>
+      <span class="snippet-name">${s.name}</span>
+    </div>`
+  ).join('');
+}
+
+function loadSnippet(code) {
+  editor.value = code;
+  updateLineNums();
+  updateStatus();
+}
+
+function updateLineNums() {
+  const lines = editor.value.split('\n');
+  const cursorPos = editor.selectionStart;
+  const textBefore = editor.value.substring(0, cursorPos);
+  const activeLine = textBefore.split('\n').length;
+  lineNums.innerHTML = lines.map((_, i) =>
+    `<span class="line-num${(i + 1) === activeLine ? ' active' : ''}">${i + 1}</span>`
+  ).join('');
+  sbLines.textContent = `${lines.length} line${lines.length !== 1 ? 's' : ''}`;
+}
+
+function updateStatus() {
+  const cursorPos = editor.selectionStart;
+  const textBefore = editor.value.substring(0, cursorPos);
+  const lines = textBefore.split('\n');
+  const ln = lines.length;
+  const col = lines[lines.length - 1].length + 1;
+  sbCursor.textContent = `Ln ${ln}, Col ${col}`;
+  updateLineNums();
+}
+
+function handleKey(e) {
+  if (e.key === 'Tab') {
+    e.preventDefault();
+    const start = editor.selectionStart;
+    const end = editor.selectionEnd;
+    editor.value = editor.value.substring(0, start) + '  ' + editor.value.substring(end);
+    editor.selectionStart = editor.selectionEnd = start + 2;
+    updateLineNums();
+  }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+    e.preventDefault();
+    runCode();
+  }
+}
+
+async function runCode() {
+  if (isRunning) return;
+  const code = editor.value.trim();
+  if (!code) { showToast('Nothing to run!'); return; }
+
+  isRunning = true;
+  runBtn.classList.add('loading');
+  runBtn.innerHTML = '<div class="spinner"></div> Running';
+  statusDot.className = 'meta-dot neutral';
+  statusText.textContent = 'Running...';
+  execTime.textContent = '—';
+  memUsage.textContent = '—';
+
+  showOutput('output', '<span style="color:var(--text3);font-family:var(--font-mono);font-size:13px;">⟳ Executing code...</span>');
+
+  const startTime = performance.now();
+
+  try {
+    const stdin = document.getElementById('stdinArea').value;
+    const response = await fetch('http://localhost:8080/api/execute', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        language: currentLang,
+        version: versionSelect.value,
+        code: code,
+        stdin: stdin
+      })
+    });
+
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+
+    if (response.ok) {
+      const data = await response.json();
+      const stdout = data.stdout || '';
+      const stderr = data.stderr || '';
+      const exitCode = data.exitCode ?? 0;
+      const memMB = data.memoryUsed ? `${data.memoryUsed} KB` : '—';
+
+      outputData.output = stdout || '(no output)';
+      outputData.errors = stderr || '(no errors)';
+      outputData.info = `Language   : ${currentLang} (${versionSelect.value})\nExit Code  : ${exitCode}\nTime       : ${elapsed}s\nMemory     : ${memMB}\nTimestamp  : ${new Date().toLocaleString()}`;
+
+      execTime.textContent = elapsed + 's';
+      memUsage.textContent = memMB;
+
+      if (exitCode === 0 && !stderr) {
+        statusDot.className = 'meta-dot ok';
+        statusText.textContent = 'Success';
+        showOutput('output', `<div class="output-content success">${escHtml(stdout) || '(no output)'}</div>`);
+      } else {
+        statusDot.className = 'meta-dot err';
+        statusText.textContent = 'Error (exit ' + exitCode + ')';
+        showOutput('output', `<div class="output-content">${escHtml(stdout)}</div>`);
+        if (currentTab === 'output' && stderr) {
+          showOutput('output', `<div class="output-content">${escHtml(stdout)}</div><hr style="border-color:var(--border);margin:12px 0"/><div class="output-content error">${escHtml(stderr)}</div>`);
+        }
+      }
+    } else {
+      throw new Error(`Server error: ${response.status}`);
+    }
+
+  } catch (err) {
+    const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
+    execTime.textContent = elapsed + 's';
+    statusDot.className = 'meta-dot err';
+    statusText.textContent = 'Connection Error';
+
+    const msg = err.message.includes('fetch') || err.message.includes('Failed')
+      ? 'Backend not connected.\nStart the API server at http://localhost:8080\n\n(This UI is ready — wire up your Spring Boot backend!)'
+      : err.message;
+
+    outputData.output = msg;
+    outputData.errors = err.toString();
+    outputData.info = `Attempted at: ${new Date().toLocaleString()}\nError: ${err.message}`;
+
+    showOutput('output', `<div class="output-content error">${escHtml(msg)}</div>`);
+  }
+
+  renderCurrentTab();
+  isRunning = false;
+  runBtn.classList.remove('loading');
+  runBtn.innerHTML = '<span class="run-icon">▶</span> Run';
+}
+
+function showOutput(tab, html) {
+  outputData[tab] = html;
+  if (currentTab === tab) renderCurrentTab();
+}
+
+function renderCurrentTab() {
+  const raw = outputData[currentTab];
+  if (!raw) {
+    outputBody.innerHTML = `<div class="output-placeholder" id="outputPlaceholder">
+      <div class="placeholder-icon">▷</div>
+      <div class="placeholder-text">press run to execute</div>
+    </div>`;
+    return;
+  }
+  if (raw.startsWith('<')) {
+    outputBody.innerHTML = raw;
+  } else {
+    outputBody.innerHTML = `<div class="output-content">${escHtml(raw)}</div>`;
+  }
+}
+
+function switchTab(tab, el) {
+  currentTab = tab;
+  document.querySelectorAll('.output-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderCurrentTab();
+}
+
+function clearEditor() {
+  editor.value = '';
+  updateLineNums();
+  outputData = { output: '', errors: '', info: '' };
+  renderCurrentTab();
+  statusText.textContent = 'Ready';
+  statusDot.className = 'meta-dot neutral';
+  execTime.textContent = '—';
+  memUsage.textContent = '—';
+  showToast('Editor cleared');
+}
+
+function copyCode() {
+  navigator.clipboard.writeText(editor.value).then(() => showToast('Copied!'));
+}
+
+function setFontSize(size) {
+  editor.style.fontSize = size + 'px';
+  document.getElementById('fontSizeVal').textContent = size;
+}
+
+function setTheme(t) {
+  document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  showToast(t === 'light' ? 'Light theme coming soon!' : 'Dark theme active');
+}
+
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+function escHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/\n/g, '<br>');
+}
+
+document.getElementById('langTabs').addEventListener('click', e => {
+  if (e.target.matches('.lang-tab')) setLang(e.target.dataset.lang);
+});
+
+versionSelect.addEventListener('change', () => {
+  sbLang.textContent = `${currentLang.charAt(0).toUpperCase() + currentLang.slice(1)} · ${versionSelect.value}`;
+});
+
+editor.addEventListener('scroll', () => {
+  lineNums.scrollTop = editor.scrollTop;
+});
+
+init();
+</script>
+</body>
+</html>
