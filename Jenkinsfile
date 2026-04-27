@@ -33,6 +33,10 @@ pipeline {
     // Run on any available Jenkins agent
     agent any
 
+    tools {
+        jdk 'jdk17'
+    }
+
     // ── Environment Variables ────────────────────────────────
     environment {
         MODULE_NAME     = 'frontend'
