@@ -1,36 +1,78 @@
 pipeline {
+
     agent any
+
+    environment {
+        MODULE_DIR = 'backend'
+    }
+
+    options {
+        buildDiscarder(logRotator(numToKeepStr: '10'))
+        timeout(time: 20, unit: 'MINUTES')
+        timestamps()
+    }
 
     stages {
 
         stage('Checkout') {
             steps {
+                echo '🔹 Checking out code...'
                 checkout scm
             }
         }
 
         stage('Build') {
             steps {
-                dir('backend') {
+                echo '🔹 Building project...'
+                dir("${env.MODULE_DIR}") {
                     bat 'mvnw.cmd clean compile'
                 }
             }
         }
 
-        stage('Test') {
+        stage('Unit Tests') {
             steps {
-                dir('backend') {
+                echo '🔹 Running unit tests...'
+                dir("${env.MODULE_DIR}") {
                     bat 'mvnw.cmd test'
+                }
+            }
+
+            // ⭐ THIS is what shows UI report in Jenkins
+            post {
+                always {
+                    junit 'backend/target/surefire-reports/*.xml'
+                    echo '✅ JUnit report published in Jenkins UI'
                 }
             }
         }
 
         stage('Package') {
             steps {
-                dir('backend') {
+                echo '🔹 Packaging JAR...'
+                dir("${env.MODULE_DIR}") {
                     bat 'mvnw.cmd package'
                 }
             }
+        }
+
+        stage('Archive') {
+            steps {
+                echo '🔹 Archiving artifacts...'
+                archiveArtifacts artifacts: 'backend/target/*.jar', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        always {
+            echo "📊 Build finished: ${currentBuild.currentResult}"
+        }
+        success {
+            echo '🎉 Build SUCCESS'
+        }
+        failure {
+            echo '❌ Build FAILED'
         }
     }
 }
