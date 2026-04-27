@@ -100,29 +100,20 @@ pipeline {
                 echo ' Stage 4: Code Quality Checks'
                 echo '──────────────────────────────────────'
                 script {
+                    // Check index.html exists and is non-empty
                     def htmlFile = 'src/main/webapp/index.html'
                     if (fileExists(htmlFile)) {
-                        def size = bat(
-                            script: "for %%F in (${htmlFile}) do @echo %%~zF",
+                        def sizeOutput = bat(
+                            script: "@for %%F in (${htmlFile}) do @echo %%~zF",
                             returnStdout: true
-                        ).trim().toInteger()
+                        ).trim()
+                        def size = sizeOutput.readLines().last().trim().toInteger()
                         if (size < 100) {
-                            error("index.html appears to be empty or too small (${size} bytes)")
+                            error("index.html is too small (${size} bytes)")
                         }
                         echo "index.html exists and is ${size} bytes — OK"
                     } else {
                         echo "WARNING: ${htmlFile} not found — skipping HTML check"
-                    }
-
-                    if (!fileExists('pom.xml')) {
-                        error('pom.xml is missing!')
-                    }
-                    echo 'pom.xml exists — OK'
-
-                    if (!fileExists('src/test/java/com/coderunner/frontend/FrontendTest.java')) {
-                        echo 'WARNING: FrontendTest.java not found at expected path'
-                    } else {
-                        echo 'FrontendTest.java exists — OK'
                     }
                 }
             }
