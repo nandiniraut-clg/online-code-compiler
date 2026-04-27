@@ -38,9 +38,9 @@ pipeline {
         MODULE_NAME     = 'frontend'
         MODULE_DIR      = 'frontend'
         JAVA_VERSION    = '17'
-        NOTIFY_EMAIL    = 'your-email@example.com'   // ← Change this
-        GITHUB_REPO     = 'https://github.com/YOUR_USERNAME/coderunner.git'  // ← Change this
-        BRANCH_NAME_VAL = 'feature/frontend'
+        NOTIFY_EMAIL    = 'nandini.raut@cumminscollege.in'   
+        GITHUB_REPO     = 'https://github.com/nandiniraut-clg/online-code-compiler'  
+        BRANCH_NAME_VAL = 'frontend'
     }
 
     // ── Build Triggers ───────────────────────────────────────
@@ -73,12 +73,11 @@ pipeline {
         stage('Checkout') {
             steps {
                 echo '──────────────────────────────────────'
-                echo " Stage 1: Checkout — ${env.BRANCH_NAME_VAL}"
+                echo " Stage 1: Using existing checkout"
                 echo '──────────────────────────────────────'
-                git branch: "${env.BRANCH_NAME_VAL}",
-                    url: "${env.GITHUB_REPO}"
 
-                // Print last commit info for traceability
+                checkout scm
+
                 sh 'git log -1 --pretty=format:"Commit: %H%nAuthor: %an%nMessage: %s"'
             }
         }
