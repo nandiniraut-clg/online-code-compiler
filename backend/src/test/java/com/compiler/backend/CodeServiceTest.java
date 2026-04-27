@@ -1,19 +1,24 @@
 package com.compiler.backend;
 
-import com.compiler.backend.model.CodeRequest;
-import com.compiler.backend.service.CodeService;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-import static org.junit.jupiter.api.Assertions.*;
+import com.compiler.backend.model.CodeRequest;
+import com.compiler.backend.service.CodeService;
 
 class CodeServiceTest {
 
     CodeService service;
 
+    @SuppressWarnings("unused")
     @BeforeEach
     void setUp() {
         service = new CodeService();
@@ -23,6 +28,7 @@ class CodeServiceTest {
     //  🐍 PYTHON TESTS
     // ══════════════════════════════════════════════════════════════
     @Nested
+    @SuppressWarnings("unused")
     @DisplayName("Python Tests")
     class PythonTests {
 
@@ -129,6 +135,7 @@ class CodeServiceTest {
     //  ☕ JAVA TESTS
     // ══════════════════════════════════════════════════════════════
     @Nested
+    @SuppressWarnings("unused")
     @DisplayName("Java Tests")
     class JavaTests {
 
@@ -284,6 +291,7 @@ class CodeServiceTest {
     //  🔵 C LANGUAGE TESTS
     // ══════════════════════════════════════════════════════════════
     @Nested
+    @SuppressWarnings("unused")
     @DisplayName("C Language Tests")
     class CTests {
 
@@ -415,6 +423,7 @@ class CodeServiceTest {
     //  ❌ UNSUPPORTED LANGUAGE TESTS
     // ══════════════════════════════════════════════════════════════
     @Nested
+    @SuppressWarnings("unused")
     @DisplayName("Unsupported Language Tests")
     class UnsupportedLanguageTests {
 
@@ -461,6 +470,7 @@ class CodeServiceTest {
     //  🔑 EDGE CASE TESTS
     // ══════════════════════════════════════════════════════════════
     @Nested
+    @SuppressWarnings("unused")
     @DisplayName("Edge Case Tests")
     class EdgeCaseTests {
 
