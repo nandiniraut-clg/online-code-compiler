@@ -1,0 +1,89 @@
+pipeline {
+    agent any
+
+    tools {
+        maven 'Maven'
+        jdk   'JDK17'
+    }
+
+    environment {
+        MODULE     = 'history-service'
+        RECIPIENT  = 'your-email@example.com'   // ← replace with your email
+    }
+
+    stages {
+
+        stage('Checkout') {
+            steps {
+                echo "Checking out feature/history-service branch..."
+                checkout scm
+            }
+        }
+
+        stage('Build') {
+            steps {
+                echo "Building ${MODULE}..."
+                dir('history-service') {
+                    sh 'mvn clean package -DskipTests'
+                }
+            }
+        }
+
+        stage('Test') {
+            steps {
+                echo "Running JUnit tests for ${MODULE}..."
+                dir('history-service') {
+                    sh 'mvn test'
+                }
+            }
+            post {
+                always {
+                    // Publish test results in Jenkins UI
+                    junit 'history-service/target/surefire-reports/*.xml'
+                }
+            }
+        }
+
+        stage('Package') {
+            steps {
+                echo "Packaging ${MODULE} JAR..."
+                dir('history-service') {
+                    sh 'mvn package -DskipTests'
+                }
+                archiveArtifacts artifacts: 'history-service/target/*.jar', fingerprint: true
+            }
+        }
+    }
+
+    post {
+        success {
+            mail to:      "${RECIPIENT}",
+                 subject: "✅ Jenkins BUILD SUCCESS — ${MODULE}",
+                 body:    """
+BUILD SUCCESSFUL
+
+Module   : ${MODULE}
+Branch   : ${env.BRANCH_NAME}
+Build No : ${env.BUILD_NUMBER}
+URL      : ${env.BUILD_URL}
+
+All tests passed. JAR archived successfully.
+"""
+        }
+
+        failure {
+            mail to:      "${RECIPIENT}",
+                 subject: "❌ Jenkins BUILD FAILED — ${MODULE}",
+                 body:    """
+BUILD FAILED
+
+Module   : ${MODULE}
+Branch   : ${env.BRANCH_NAME}
+Build No : ${env.BUILD_NUMBER}
+URL      : ${env.BUILD_URL}
+
+Check the console output for details.
+"""
+        }
+    }
+}
