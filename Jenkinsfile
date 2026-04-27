@@ -7,14 +7,14 @@
  *  Pipeline Stages:
  *  1. Checkout       → Pull code from GitHub branch
  *  2. Build          → Compile with Maven
- *  3. Unit Tests     → Run JUnit tests, publish results
+ *  3. Unit Tests     → Run JUnit tests, publibat results
  *  4. Code Quality   → Check for empty files / basic lint
  *  5. Integration Tests → API-level tests (server must be running)
  *  6. Package        → Build final JAR artifact
  *  7. Archive        → Save JAR + HTML as Jenkins artifacts
  *
  *  Post Actions:
- *  - Always  → Publish JUnit XML report
+ *  - Always  → Publibat JUnit XML report
  *  - Success → Email success notification
  *  - Failure → Email failure notification with log link
  *
@@ -78,7 +78,7 @@ pipeline {
 
                 checkout scm
 
-                sh 'git log -1 --pretty=format:"Commit: %H%nAuthor: %an%nMessage: %s"'
+                bat 'git log -1 --pretty=format:"Commit: %H%nAuthor: %an%nMessage: %s"'
             }
         }
 
@@ -89,7 +89,7 @@ pipeline {
                 echo ' Stage 2: Build — mvn clean compile'
                 echo '──────────────────────────────────────'
                 dir("${env.MODULE_DIR}") {
-                    sh 'mvn clean compile -B'
+                    bat 'mvn clean compile -B'
                     // -B = batch mode (no progress bars, cleaner Jenkins logs)
                 }
             }
@@ -103,19 +103,19 @@ pipeline {
                 echo '──────────────────────────────────────'
                 dir("${env.MODULE_DIR}") {
                     // Run tests and continue even if some fail
-                    // (so we can always publish the report)
-                    sh 'mvn test -B || true'
+                    // (so we can always publibat the report)
+                    bat 'mvn test -B || true'
                 }
             }
             post {
                 always {
-                    // Publish JUnit XML results to Jenkins dashboard
+                    // Publibat JUnit XML results to Jenkins dabatboard
                     junit(
                         testResults: "${env.MODULE_DIR}/target/surefire-reports/*.xml",
                         allowEmptyResults: true,
-                        skipPublishingChecks: false
+                        skipPublibatingChecks: false
                     )
-                    echo 'JUnit report published to Jenkins.'
+                    echo 'JUnit report publibated to Jenkins.'
                 }
             }
         }
@@ -131,7 +131,7 @@ pipeline {
                         // Check index.html exists and is non-empty
                         def htmlFile = 'src/main/webapp/index.html'
                         if (fileExists(htmlFile)) {
-                            def size = sh(
+                            def size = bat(
                                 script: "wc -c < ${htmlFile}",
                                 returnStdout: true
                             ).trim().toInteger()
@@ -170,16 +170,16 @@ pipeline {
                 dir("${env.MODULE_DIR}") {
                     script {
                         // Check if API server is reachable before running tests
-                        def serverUp = sh(
+                        def serverUp = bat(
                             script: 'curl -s -o /dev/null -w "%{http_code}" http://localhost:8080/api/health || echo "000"',
                             returnStdout: true
                         ).trim()
 
                         if (serverUp == '200') {
                             echo "API server is UP (HTTP ${serverUp}) — running integration tests"
-                            sh 'mvn verify -P integration-tests -B || true'
+                            bat 'mvn verify -P integration-tests -B || true'
 
-                            // Publish failsafe integration test results
+                            // Publibat failsafe integration test results
                             junit(
                                 testResults: 'target/failsafe-reports/*.xml',
                                 allowEmptyResults: true
@@ -202,7 +202,7 @@ pipeline {
                 echo ' Stage 6: Package — mvn package'
                 echo '──────────────────────────────────────'
                 dir("${env.MODULE_DIR}") {
-                    sh 'mvn package -DskipTests -B'
+                    bat 'mvn package -DskipTests -B'
                     echo 'JAR built at: target/coderunner-frontend-1.0.0.jar'
                 }
             }
@@ -242,7 +242,7 @@ pipeline {
         // Always runs — regardless of pass/fail
         always {
             echo '══════════════════════════════════════'
-            echo " Build #${env.BUILD_NUMBER} finished: ${currentBuild.currentResult}"
+            echo " Build #${env.BUILD_NUMBER} finibated: ${currentBuild.currentResult}"
             echo '══════════════════════════════════════'
         }
 
