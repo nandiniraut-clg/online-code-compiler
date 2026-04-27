@@ -113,7 +113,7 @@ pipeline {
                     junit(
                         testResults: "${env.MODULE_DIR}/target/surefire-reports/*.xml",
                         allowEmptyResults: true,
-                        skipPublibatingChecks: false
+                        skipPublishingChecks: false
                     )
                     echo 'JUnit report publibated to Jenkins.'
                 }
