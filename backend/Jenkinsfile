@@ -11,19 +11,25 @@ pipeline {
 
         stage('Build') {
             steps {
-                bat 'mvnw.cmd clean compile'
+                dir('backend') {
+                    bat 'mvnw.cmd clean compile'
+                }
             }
         }
 
         stage('Test') {
             steps {
-                bat 'mvnw.cmd test'
+                dir('backend') {
+                    bat 'mvnw.cmd test'
+                }
             }
         }
 
         stage('Package') {
             steps {
-                bat 'mvnw.cmd package'
+                dir('backend') {
+                    bat 'mvnw.cmd package'
+                }
             }
         }
     }
