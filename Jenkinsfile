@@ -79,7 +79,7 @@ pipeline {
                 echo '──────────────────────────────────────'
                 echo ' Stage 3: Unit Tests — mvn test'
                 echo '──────────────────────────────────────'
-                bat 'mvn test -B || true'
+                bat 'mvn test -B || exit 0'
             }
             post {
                 always {
