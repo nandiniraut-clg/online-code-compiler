@@ -3,7 +3,7 @@
 
 ---
 
-## 📁 Module Structure
+## Module Structure
 
 frontend/
 ├── src/
@@ -19,7 +19,7 @@ frontend/
 
 ---
 
-## ⚙️ Description
+## Description
 
 This module provides the **frontend UI** for an online code compiler.
 
@@ -31,7 +31,7 @@ This module provides the **frontend UI** for an online code compiler.
 
 ---
 
-## 🔗 API Used
+## API Used
 
 POST `/api/execute`
 
