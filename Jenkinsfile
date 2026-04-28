@@ -5,7 +5,7 @@
  * ============================================================
  *
  *  Pipeline Stages:
- *  1. Checkout       → Pull code from GitHub branch
+ *  1. Checkout       → Pull code from GitHub branc
  *  2. Build          → Compile with Maven
  *  3. Unit Tests     → Run JUnit tests, publish results
  *  4. Code Quality   → Check for empty files / basic lint
